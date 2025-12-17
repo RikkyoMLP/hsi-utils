@@ -21,7 +21,7 @@ def _plot_on_axis(ax, plots: List[PlotInput]):
         return
 
     for plot in plots:
-        if not plot.data:
+        if plot.data is None or len(plot.data) == 0:
             print(f"Warning: Skipping plot '{plot.identifier}' due to empty data.")
             continue
 
