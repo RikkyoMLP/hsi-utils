@@ -33,7 +33,7 @@ pip install -e .
 
 ### Example usage
 
-An example library is provided in \[double-blind redacted\].
+You can find an example repository [here](https://github.com/RikkyoMLP/python-monorepo-example).
 
 ## Modules & API Reference
 
