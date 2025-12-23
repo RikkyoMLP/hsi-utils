@@ -4,6 +4,8 @@ Shared utility library for hyperspectral image related tasks.
 
 ## Usage
 
+### Install as monorepo dependency (recommended)
+
 This library can be used as a monorepo dependency. To do this, you will need to install [uv](https://docs.astral.sh/uv/) as your python package manager.
 
 ```bash
@@ -19,27 +21,35 @@ Then, you can install this library as a monorepo dependency.
 uv sync
 ```
 
-### Example usage
+### Install as an editable package
 
+If you prefer to install this library as an editable package, you can do so by running the following command:
+
+```bash
+git clone https://github.com/RikkyoMLP/hsi-utils.git
+cd hsi-utils
+pip install -e .
+```
+
+### Example usage
 
 An example library is provided in \[double-blind redacted\].
 
 ## Modules & API Reference
 
-### 1. Masks (`hsi_utils.masks`)
+### Masks (`hsi_utils.masks`)
 
 Utilities for generating and managing optical masks, specifically for CASSI systems.
 
 - `generate_masks(mask_path: str, batch_size: int) -> torch.Tensor`
   Generates a batch of 3D fixed masks.
-  
 - `generate_shift_masks(mask_path: str, batch_size: int) -> tuple[torch.Tensor, torch.Tensor]`
   Generates shifted 3D masks and their squared sum, used for dispersion modeling.
 
 - `init_mask(mask_path: str, mask_type: str, batch_size: int) -> tuple[torch.Tensor, torch.Tensor]`
   High-level entry point to initialize masks.
 
-### 2. Datasets (`hsi_utils.datasets`)
+### Datasets (`hsi_utils.datasets`)
 
 Functions for loading, processing, and augmenting hyperspectral datasets.
 
@@ -55,7 +65,7 @@ Functions for loading, processing, and augmenting hyperspectral datasets.
 - `shuffle_crop(train_data: List[np.ndarray], batch_size: int, crop_size: int = 256, argument: bool = True) -> torch.Tensor`
   Performs random cropping and data augmentation (rotation, flipping, and mosaic/stitching) on the training data.
 
-### 3. Physics (`hsi_utils.physics`)
+### Physics (`hsi_utils.physics`)
 
 Implements the physical forward models for CASSI (Coded Aperture Snapshot Spectral Imaging).
 
@@ -70,3 +80,16 @@ Implements the physical forward models for CASSI (Coded Aperture Snapshot Spectr
 
 - `init_meas(gt: torch.Tensor, mask: torch.Tensor, input_setting: str) -> torch.Tensor`
   Wrapper to generate measurements from ground truth.
+
+### Logger (`hsi_utils.logger`)
+
+Utilities for logging and logging exceptions.
+
+- `logger`
+  Global logger instance.
+
+- `setup_logger(log_path: str, level: int = logging.INFO) -> None`
+  Setup global Root Logger.
+
+- `log_exception(func: Callable[..., Any]) -> Callable[..., Any]`
+  Decorator to capture exceptions raised in the decorated function, log the full traceback to the configured logger, and re-raise the exception.
