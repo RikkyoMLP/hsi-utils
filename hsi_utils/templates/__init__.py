@@ -1,1 +1,1 @@
-from hsi_utils.templates.template import get_template
+from hsi_utils.templates.template import get_template, get_template_list

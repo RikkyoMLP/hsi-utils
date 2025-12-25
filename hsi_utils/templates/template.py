@@ -1,16 +1,7 @@
 from typing import Tuple, Optional, List, Dict, Union, Any
 from omegaconf import DictConfig
 
-
-def get_template(
-    args: Union[DictConfig, Dict[str, Any]]
-) -> Tuple[Optional[str], Optional[str]]:
-    """
-    Determine input_setting and input_mask based on args.template.
-    Prioritizes user's explicit input if template is not specified.
-    If template is specified, it overrides input_setting and input_mask.
-    """
-    configs: List[Dict[str, Optional[str]]] = [
+configs: List[Dict[str, Optional[str]]] = [
         {"name_includes": "mst", "input_setting": "H", "input_mask": "Phi"},
         {"name_includes": "gap_net", "input_setting": "Y", "input_mask": "Phi_PhiPhiT"},
         {
@@ -31,6 +22,14 @@ def get_template(
         {"name_includes": "lambda_net", "input_setting": "Y", "input_mask": "Phi"},
     ]
 
+def get_template(
+    args: Union[DictConfig, Dict[str, Any]]
+) -> Tuple[Optional[str], Optional[str]]:
+    """
+    Determine input_setting and input_mask based on args.template.
+    Prioritizes user's explicit input if template is not specified.
+    If template is specified, it overrides input_setting and input_mask.
+    """
     # Handle both object-like access (OmegaConf/Namespace) and dict-like access
     if hasattr(args, "get"):
         template = args.get("template", "")
@@ -53,3 +52,12 @@ def get_template(
             input_mask = config["input_mask"]
 
     return input_setting, input_mask
+
+
+def get_template_list() -> List[Dict[str, Optional[str]]]:
+    """Get list of templates.
+
+    Returns:
+        `List[Dict[str, Optional[str]]]: List of templates.
+    """
+    return configs

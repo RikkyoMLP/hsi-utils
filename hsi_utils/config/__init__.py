@@ -1,1 +1,1 @@
-from .config_utils import load_merge_config
+from .config_utils import *

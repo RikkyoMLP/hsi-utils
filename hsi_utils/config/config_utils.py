@@ -2,6 +2,7 @@ from omegaconf import OmegaConf
 from pathlib import Path
 from typing import List, Union, Optional
 from hsi_utils.templates import get_template
+import sys
 
 
 def load_merge_config(
@@ -47,3 +48,8 @@ def load_merge_config(
             merged_config = OmegaConf.merge(merged_config, OmegaConf.create(updates))
 
     return merged_config
+
+
+def from_args(base_config_path: Union[Path, str, None] = None, inject_template: bool = False) -> OmegaConf:
+    args = sys.argv[1:]
+    return load_merge_config(args, base_config_path, inject_template)
