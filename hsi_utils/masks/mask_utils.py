@@ -15,14 +15,29 @@ def generate_masks(mask_path: str, batch_size: int) -> torch.Tensor:
         torch.Tensor: Batch of 3D masks with shape [batch_size, nC, H, W].
     """
     # Handle path with or without trailing slash
-    file_path = os.path.join(mask_path, "fixmask_3d.mat")
+    # file_path = os.path.join(mask_path, "fixmask_3d.mat")
+    file_path = os.path.join(mask_path, "mask.mat")
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"Mask file not found at {file_path}")
     mask = sio.loadmat(file_path)
-    mask_3d = mask["mask_3d"]
-    mask_3d = np.transpose(mask_3d, [2, 0, 1])
-    mask3d = torch.from_numpy(mask_3d)
-    nC, H, W = mask3d.shape
+    mask = mask["mask"]
+    # mask_3d = mask["mask_3d"]
+    mask3d = np.tile(mask[:, :, np.newaxis], (1, 1, 28))
+    mask3d = np.transpose(mask3d, [2, 0, 1])
+    mask3d = torch.from_numpy(mask3d)
+    [nC, H, W] = mask3d.shape
     mask3d_batch = mask3d.expand([batch_size, nC, H, W]).cuda().float()
     return mask3d_batch
+
+# def generate_masks(mask_path, batch_size):
+#     mask = sio.loadmat("/root/gpufree-data/CASSI-SSL/dataset/mask.mat")
+#     mask = mask["mask"]
+#     mask3d = np.tile(mask[:, :, np.newaxis], (1, 1, 28))
+#     mask3d = np.transpose(mask3d, [2, 0, 1])
+#     mask3d = torch.from_numpy(mask3d)
+#     [nC, H, W] = mask3d.shape
+#     mask3d_batch = mask3d.expand([batch_size, nC, H, W]).cuda().float()
+#     return mask3d_batch
 
 def generate_shift_masks(mask_path: str, batch_size: int) -> tuple[torch.Tensor, torch.Tensor]:
     """
