@@ -129,3 +129,5 @@ Utilities for training the model.
   Sets GPU ID for multiple / single GPU training.
 - `set_seed(seed: int) -> None`
   Sets seed for reproducibility.
+- `setup_cudnn(benchmark: bool = False, deterministic: bool = False, enabled: bool = True) -> None`
+  Explicitly setup CuDNN environment.

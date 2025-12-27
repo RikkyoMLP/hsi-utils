@@ -31,7 +31,7 @@ def load_merge_config(
     merged_config = OmegaConf.merge(base_config, cli_config)
     
     # If template is explicitly specified, force inject
-    if merged_config.template is not None:
+    if hasattr(merged_config, "template") and merged_config.template is not None:
         inject_template = True
 
     if inject_template:
