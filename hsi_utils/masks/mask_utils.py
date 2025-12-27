@@ -68,6 +68,8 @@ def generate_shift_masks(mask_path: str, batch_size: int) -> tuple[torch.Tensor,
 def init_mask(mask_path: str, mask_type: str, batch_size: int) -> tuple[torch.Tensor, torch.Tensor]:
     """
     Initialize masks.
+
+    CAVEAT: Can only handle fixed mask for now.
     
     Args:
         mask_path: Path to mask directory.
@@ -77,6 +79,7 @@ def init_mask(mask_path: str, mask_type: str, batch_size: int) -> tuple[torch.Te
     Returns:
         tuple[torch.Tensor, torch.Tensor]: The mask batch and input mask (identical in current logic).
     """
+    # TODO: handle mask types: mask (fixed mask), fixmask_3d (3D fixed mask)
     mask3d_batch = generate_masks(mask_path, batch_size)
     input_mask = mask3d_batch
     print(f"Mask shape: {mask3d_batch.shape}")
