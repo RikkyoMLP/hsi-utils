@@ -38,7 +38,7 @@ def load_merge_config(
     # If template is explicitly specified, force inject
     if hasattr(merged_config, "template") and merged_config.template is not None:
         inject_template = True
-
+    # print(f"Inject template: {inject_template}, merged_config: {merged_config}")
     if inject_template:
         # Resolve template dependencies
         input_setting, input_mask = get_template(merged_config)
@@ -48,7 +48,8 @@ def load_merge_config(
             updates["input_setting"] = input_setting
         if input_mask is not None:
             updates["input_mask"] = input_mask
-
+        
+        
         if updates:
             merged_config = OmegaConf.merge(merged_config, OmegaConf.create(updates))
 
@@ -82,11 +83,22 @@ def from_args(
         return value
 
     _, unknown = argparse.ArgumentParser().parse_known_args()
-    for i in range(0, len(unknown), 2):
-        if i + 1 >= len(unknown):
-            break
-        key = unknown[i]
-        value = unknown[i + 1]
-        args[_transform_key(key)] = _transform_value(value)
+    i = 0
+    while i < len(unknown):
+        arg = unknown[i]
+        if "=" in arg:
+            key, value = arg.split("=", 1)
+            args[_transform_key(key)] = _transform_value(value)
+            i += 1
+        else:
+            if i + 1 < len(unknown):
+                key = arg
+                value = unknown[i + 1]
+                args[_transform_key(key)] = _transform_value(value)
+                i += 2
+            else:
+                i += 1
+
+    # print(f"Args: {args}")
 
     return load_merge_config(args, base_config_path, inject_template)
