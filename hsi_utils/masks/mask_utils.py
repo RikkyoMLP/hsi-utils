@@ -2,6 +2,7 @@ import os
 import scipy.io as sio
 import numpy as np
 import torch
+from hsi_utils.physics import shift
 
 def generate_masks(mask_path: str, batch_size: int) -> torch.Tensor:
     """
@@ -69,19 +70,30 @@ def init_mask(mask_path: str, mask_type: str, batch_size: int) -> tuple[torch.Te
     """
     Initialize masks.
 
-    CAVEAT: Can only handle fixed mask for now.
-    
     Args:
         mask_path: Path to mask directory.
-        mask_type: Type of mask (currently unused in logic but kept for interface compatibility).
+        mask_type: Type of mask.
         batch_size: Batch size.
         
     Returns:
-        tuple[torch.Tensor, torch.Tensor]: The mask batch and input mask (identical in current logic).
+        tuple[torch.Tensor, torch.Tensor]: The mask batch and input mask.
     """
-    # TODO: handle mask types: mask (fixed mask), fixmask_3d (3D fixed mask)
     mask3d_batch = generate_masks(mask_path, batch_size)
-    input_mask = mask3d_batch
+    
+    if mask_type == "Phi":
+        shift_mask3d_batch = shift(mask3d_batch)
+        input_mask = shift_mask3d_batch
+    elif mask_type == "Phi_PhiPhiT":
+        Phi_batch, Phi_s_batch = generate_shift_masks(mask_path, batch_size)
+        input_mask = (Phi_batch, Phi_s_batch)
+    elif mask_type == "Mask":
+        input_mask = mask3d_batch
+    elif mask_type is None:
+        input_mask = None
+    else:
+        # Default fallback
+        input_mask = mask3d_batch
+
     print(f"Mask shape: {mask3d_batch.shape}")
     return mask3d_batch, input_mask
 
