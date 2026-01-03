@@ -96,6 +96,11 @@ Utilities for calculating metrics such as PSNR and SSIM.
 - `ssim(img: torch.Tensor, ref: torch.Tensor) -> float`
   Calculates the SSIM between two images.
 
+### Models (`hsi_utils.models`)
+
+- `get_nb_trainable_parameters(model: nn.Module) -> tuple[int, int]`
+  Framework-agnostic function to get the number of trainable and all parameters in the model.
+
 ### Physics (`hsi_utils.physics`)
 
 Implements the physical forward models for CASSI (Coded Aperture Snapshot Spectral Imaging).
