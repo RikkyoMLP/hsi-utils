@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from dataclasses import dataclass
 from typing import List, Union, Optional
-
+from PIL import Image
 
 @dataclass
 class PlotInput:
@@ -89,6 +89,7 @@ def _plot_on_axis(ax, plots: List[PlotInput]):
             )
 
 
+import io
 def draw_plot(
     left_axis_plots: List[PlotInput],
     left_axis_label: str,
@@ -96,8 +97,8 @@ def draw_plot(
     right_axis_label: str,
     x_axis_label: str,
     title: str,
-    output_path: str,
-):
+    output_path: Optional[str] = None,
+) -> Image.Image:
     """
     Generic dual Y-axis plotting function
     Accepts two sets of PlotInput, one for each Y-axis
@@ -135,9 +136,19 @@ def draw_plot(
     if labels:  # Only show legend if there are labels
         ax1.legend(lines, labels, loc="lower right")
 
-    try:
-        plt.savefig(output_path)
-        plt.close(fig)  # Explicitly close, release memory
-        print(f"Plot saved successfully to '{output_path}'")
-    except Exception as e:
-        print(f"Error saving plot to '{output_path}': {e}")
+    # Save to buffer
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png", bbox_inches="tight")
+    buf.seek(0)
+    img = Image.open(buf).copy()  # Copy to ensure it remains valid after closing buffer
+    buf.close()
+
+    if output_path:
+        try:
+            img.save(output_path)
+            print(f"Plot saved successfully to '{output_path}'")
+        except Exception as e:
+            print(f"Error saving plot to '{output_path}': {e}")
+            
+    plt.close(fig)
+    return img
