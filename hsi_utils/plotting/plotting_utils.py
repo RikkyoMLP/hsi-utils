@@ -16,6 +16,50 @@ class PlotInput:
     fill_color: Optional[str] = None  # fill color, do not fill if None
 
 
+@dataclass
+class BaselineInput:
+    value: float
+    label: str = "Baseline"
+    line_color: Optional[str] = None
+    line_style: str = "--"
+    line_width: float = 1.5
+    fill_color: Optional[str] = None
+    fill_alpha: float = 0.1
+
+
+def _plot_baseline(ax, baseline: Union[float, BaselineInput], default_color: str):
+    if isinstance(baseline, (int, float)):
+        b_input = BaselineInput(
+            value=float(baseline),
+            line_color=default_color,
+            line_style="--",
+            fill_color=None
+        )
+    else:
+        b_input = baseline
+        if b_input.line_color is None:
+            b_input.line_color = default_color
+
+    ax.axhline(
+        y=b_input.value,
+        color=b_input.line_color,
+        linestyle=b_input.line_style,
+        linewidth=b_input.line_width,
+        label=b_input.label,
+        alpha=0.8,
+    )
+
+    if b_input.fill_color:
+        ymin, ymax = ax.get_ylim()
+        fill_bottom = ymin if ymin != float('inf') else 0
+        ax.axhspan(
+            fill_bottom, 
+            b_input.value, 
+            facecolor=b_input.fill_color, 
+            alpha=b_input.fill_alpha
+        )
+
+
 def _plot_on_axis(ax, plots: List[PlotInput]):
     if not plots:
         return
@@ -98,6 +142,8 @@ def draw_plot(
     x_axis_label: str,
     title: str,
     output_path: Optional[str] = None,
+    left_axis_baseline: Union[float, BaselineInput, None] = None,
+    right_axis_baseline: Union[float, BaselineInput, None] = None,
 ) -> Image.Image:
     """
     Generic dual Y-axis plotting function
@@ -113,14 +159,18 @@ def draw_plot(
 
     # Plot on left axis
     _plot_on_axis(ax1, left_axis_plots)
+    if left_axis_baseline is not None:
+        _plot_baseline(ax1, left_axis_baseline, "tab:red")
 
     ax2 = None
-    if right_axis_plots:
+    if right_axis_plots or right_axis_baseline is not None:
         ax2 = ax1.twinx()
         ax2.set_ylabel(right_axis_label, color="tab:blue")
         ax2.tick_params(axis="y", labelcolor="tab:blue")
         # Plot on right axis
         _plot_on_axis(ax2, right_axis_plots)
+        if right_axis_baseline is not None:
+            _plot_baseline(ax2, right_axis_baseline, "tab:blue")
 
     # Title and legend
     fig.suptitle(title, fontsize=16)
