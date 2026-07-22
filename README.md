@@ -94,6 +94,76 @@ Utilities for logging and logging exceptions.
 - `log_exception(func: Callable[..., Any]) -> Callable[..., Any]`
   Decorator to capture exceptions raised in the decorated function, log the full traceback to the configured logger, and re-raise the exception.
 
+#### Weights & Biases
+
+- `WandbLogger.from_config(settings, *, run_name=None, run_config=None, run_id=None, resume="must", default_project=None, api_key=None, strict=False) -> WandbLogger`
+  Initializes an optional W&B run from a YAML file or mapping. Missing/disabled settings and initialization failures produce a safe no-op logger; use `strict=True` when failures should be raised.
+- `WandbLogger.log(data, *, step=None, **kwargs) -> None`
+  Uploads metrics or media to the active run.
+- `WandbLogger.image(data, **kwargs) -> Any`
+  Wraps image-like data as `wandb.Image` when tracking is active.
+- `WandbLogger.autolog(*, step=None)`
+  Activates a logger and step for decorated calls within a `with` block.
+- `WandbLogger.finish(**kwargs) -> None`
+  Finishes the active run. Repeated calls are safe.
+- `wandb_capture(namespace)`
+  Decorates a function returning a mapping and automatically uploads its scalar metrics, indexed metrics, and RGB image sequences.
+
+Install the optional backend and create a logger:
+
+```bash
+uv add "hsi-utils[wandb]"
+```
+
+```yaml
+# configs/wandb.yaml
+enabled: true
+project: my-project
+entity: my-team
+group: baseline
+```
+
+```python
+from hsi_utils.logger import WandbLogger, wandb_capture
+
+@wandb_capture("train")
+def train_epoch(...):
+    ...
+    return {"loss": loss, "lr": lr, "epoch_time": elapsed}
+
+@wandb_capture("eval")
+def evaluate(...):
+    ...
+    return {
+        "psnr_mean": psnr_mean,
+        "psnr_per_scene": psnr_per_scene,
+        "recon_rgb": recon_images,
+        "gt_rgb": gt_images,
+    }
+
+tracker = WandbLogger.from_config(
+    "configs/wandb.yaml",
+    run_name="experiment-01",
+    run_config={"learning_rate": 1e-4},
+    run_id=None,  # Set an existing ID to resume it with resume="must".
+)
+
+with tracker.autolog(step=1):
+    train_epoch(...)
+    evaluate(...)
+
+tracker.finish()
+```
+
+The decorator follows these conventions:
+
+- Scalar keys are logged below the decorator namespace, such as `loss` becoming `train/loss`.
+- Numeric `*_per_scene` sequences expand to `*_S01`, `*_S02`, and so on.
+- Numeric `stage_*_mean` sequences expand to `stage_1_*`, `stage_2_*`, and so on.
+- Image sequences named `*_rgb` become media panels such as `recon/S01`; `gt_rgb` is uploaded only once per logger instance.
+
+Authentication uses `WANDB_API_KEY` when it is set and otherwise falls back to the normal `wandb.login()` credential lookup. YAML keys other than `enabled`, `login`, and `api_key_env` are forwarded to `wandb.init`, so standard options such as `tags`, `group`, `mode`, and `notes` remain available.
+
 ### Loss Functions (`hsi_utils.loss_functions`)
 
 Regularization losses for HSI reconstruction.
