@@ -179,9 +179,13 @@ Regularization losses for HSI reconstruction.
 Utilities for generating and managing optical masks, specifically for CASSI systems.
 
 - `generate_masks(mask_path: str, batch_size: int) -> torch.Tensor`
-  Generates a batch of 3D fixed masks.
+  Generates a batch of 3D fixed masks. Optional `channels`, `device`, and
+  `dtype` arguments preserve the caller's execution contract.
 - `generate_shift_masks(mask_path: str, batch_size: int) -> tuple[torch.Tensor, torch.Tensor]`
-  Generates shifted 3D masks and their squared sum, used for dispersion modeling.
+  Synthesizes shifted 3D masks from `mask.mat` and returns their squared sum.
+- `load_shifted_masks(mask_path: str, batch_size: int) -> tuple[torch.Tensor, torch.Tensor]`
+  Loads a calibrated `mask_3d_shift.mat` asset verbatim. Use this when a
+  dataset publishes shifted-mask boundary values that must not be regenerated.
 
 - `init_mask(mask_path: str, mask_type: str, batch_size: int) -> tuple[torch.Tensor, torch.Tensor]`
   High-level entry point to initialize masks.
@@ -212,10 +216,16 @@ Small standalone utilities.
 Implements the physical forward models for CASSI (Coded Aperture Snapshot Spectral Imaging).
 
 - `shift(inputs: torch.Tensor, step: int = 2) -> torch.Tensor`
-  Simulates the dispersion effect by shifting spectral channels.
+  Simulates the dispersion effect while preserving device and dtype.
 
-- `shift_back(inputs: torch.Tensor, step: int = 2) -> torch.Tensor`
-  Reverses the dispersion shift effect.
+- `shift_back(inputs: torch.Tensor, step: int = 2, channels: int = 28) -> torch.Tensor`
+  Reverses the dispersion shift effect for a configurable channel count.
+
+- `cassi_forward(cube: torch.Tensor, mask: torch.Tensor, step: int = 2) -> torch.Tensor`
+  Applies the raw, unnormalized CASSI forward operator with a per-sample mask.
+
+- `cassi_adjoint(measurement: torch.Tensor, mask: torch.Tensor, step: int = 2) -> torch.Tensor`
+  Applies the exact adjoint of `cassi_forward`.
 
 - `gen_meas_torch(data_batch: torch.Tensor, mask3d_batch: torch.Tensor, Y2H: bool = True, mul_mask: bool = False) -> torch.Tensor`
   The forward model: generates 2D compressed measurements from 3D hyperspectral cubes and masks. Can also return pseudo-HSI if `Y2H=True`.
