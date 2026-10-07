@@ -61,8 +61,26 @@ Classes and functions for loading, processing, and augmenting hyperspectral data
 - `LoadMeasurement(path_test_meas: str) -> torch.Tensor`
   Loads pre-simulated measurement data for testing.
 
-- `shuffle_crop(train_data: List[np.ndarray], batch_size: int, crop_size: int = 256, argument: bool = True) -> torch.Tensor`
-  Performs random cropping and data augmentation (rotation, flipping, and mosaic/stitching) on the training data.
+- `shuffle_crop(train_data, batch_size, crop_size=256, argument=True, *, seed=42) -> torch.Tensor`
+  Performs random cropping and data augmentation (rotation, flipping, and mosaic/stitching) using one NumPy `default_rng(seed)` generator. The default `42` replays the same batch for the same input; vary it each update during training. Global RNG states are unchanged. Seeded results differ from the older NumPy/Python mixed-RNG implementation.
+
+- `BatchLoader(files, *, batch_size=4, crop_size=256, key="img_expand", scale=1/65536, seed=42)`
+  Reads the explicit file list once in the supplied order, accepts HWC/CHW cubes, and caches normalized HWC float32 arrays. `batch_at(global_update)` calls `shuffle_crop` with `seed + global_update`, so resumed training can recover sampling from its absolute update count. The current recipe supports 28 bands, `crop_size=256`, and images with height/width greater than 256. Batches are CUDA float32 tensors; this is a single-process in-memory loader, not a PyTorch `DataLoader` or worker pipeline.
+
+#### Example: Cached full-image augmentation
+
+```python
+from hsi_utils.datasets import BatchLoader
+
+loader = BatchLoader(train_files, batch_size=4, seed=42)
+for global_update in range(completed_updates + 1, total_updates + 1):
+    target = loader.batch_at(global_update)  # [B, 28, 256, 256], CUDA
+    # Generate measurements and model noise in the training code.
+    ...
+
+same_batch = loader.batch_at(100)  # Repeats the batch for update 100.
+next_batch = loader.batch_at(101)  # Uses a different seed.
+```
 
 #### Example: Loading data with DataLoader
 

@@ -1,5 +1,4 @@
 import os
-import random
 import numpy as np
 import torch
 import tqdm
@@ -244,7 +243,7 @@ def LoadMeasurement(path_test_meas: str) -> torch.Tensor:
     return test_data
 
 
-def _augment_single(x: torch.Tensor) -> torch.Tensor:
+def _augment_single(x: torch.Tensor, rng: np.random.Generator) -> torch.Tensor:
     """
     Apply random rotation and flipping to a single sample.
 
@@ -254,9 +253,9 @@ def _augment_single(x: torch.Tensor) -> torch.Tensor:
     Returns:
         torch.Tensor: Augmented tensor.
     """
-    rotTimes = random.randint(0, 3)
-    vFlip = random.randint(0, 1)
-    hFlip = random.randint(0, 1)
+    rotTimes = rng.integers(0, 4)
+    vFlip = rng.integers(0, 2)
+    hFlip = rng.integers(0, 2)
     # Random rotation
     for _ in range(rotTimes):
         x = torch.rot90(x, dims=(1, 2))
@@ -297,6 +296,8 @@ def shuffle_crop(
     batch_size: int,
     crop_size: int = 256,
     argument: bool = True,
+    *,
+    seed: int = 42,
 ) -> torch.Tensor:
     """
     Randomly crop and augment training data.
@@ -306,23 +307,26 @@ def shuffle_crop(
         batch_size: Batch size.
         crop_size: Size of the crop.
         argument: Whether to apply data augmentation.
+        seed: NumPy random seed. Use a different seed per training step;
+            the same seed and inputs replay the same batch.
 
     Returns:
         torch.Tensor: Batch of processed training samples.
     """
+    rng = np.random.default_rng(seed)
     if argument:
         gt_batch = []
         # The first half data use the original data.
         half_batch = batch_size // 2
-        index = np.random.choice(range(len(train_data)), half_batch)
+        index = rng.choice(range(len(train_data)), half_batch)
         processed_data = np.zeros(
             (half_batch, crop_size, crop_size, 28), dtype=np.float32
         )
         for i in range(half_batch):
             img = train_data[index[i]]
             h, w, _ = img.shape
-            x_index = np.random.randint(0, h - crop_size)
-            y_index = np.random.randint(0, w - crop_size)
+            x_index = rng.integers(0, h - crop_size)
+            y_index = rng.integers(0, w - crop_size)
             processed_data[i, :, :, :] = img[
                 x_index : x_index + crop_size, y_index : y_index + crop_size, :
             ]
@@ -330,7 +334,7 @@ def shuffle_crop(
             torch.from_numpy(np.transpose(processed_data, (0, 3, 1, 2))).cuda().float()
         )
         for i in range(processed_data_torch.shape[0]):
-            gt_batch.append(_augment_single(processed_data_torch[i]))
+            gt_batch.append(_augment_single(processed_data_torch[i], rng))
 
         # The other half data use splicing.
         remaining_batch = batch_size - half_batch
@@ -339,15 +343,15 @@ def shuffle_crop(
         # Note: Code assumes crop_size is 256 for the mosaic logic (128*2)
         # If crop_size changes, this logic needs adjustment, but keeping original logic for now.
 
-        for i in range(remaining_batch):
-            sample_list = np.random.randint(0, len(train_data), 4)
+        for _ in range(remaining_batch):
+            sample_list = rng.integers(0, len(train_data), 4)
             for j in range(4):
                 # Retrieve random sample to get dimensions
                 img_sample = train_data[sample_list[j]]
                 h, w, _ = img_sample.shape
 
-                x_index = np.random.randint(0, h - crop_size // 2)
-                y_index = np.random.randint(0, w - crop_size // 2)
+                x_index = rng.integers(0, h - crop_size // 2)
+                y_index = rng.integers(0, w - crop_size // 2)
                 processed_data_2[j] = img_sample[
                     x_index : x_index + crop_size // 2,
                     y_index : y_index + crop_size // 2,
@@ -360,15 +364,15 @@ def shuffle_crop(
         gt_batch = torch.stack(gt_batch, dim=0)
         return gt_batch
     else:
-        index = np.random.choice(range(len(train_data)), batch_size)
+        index = rng.choice(range(len(train_data)), batch_size)
         processed_data = np.zeros(
             (batch_size, crop_size, crop_size, 28), dtype=np.float32
         )
         for i in range(batch_size):
             img = train_data[index[i]]
             h, w, _ = img.shape
-            x_index = np.random.randint(0, h - crop_size)
-            y_index = np.random.randint(0, w - crop_size)
+            x_index = rng.integers(0, h - crop_size)
+            y_index = rng.integers(0, w - crop_size)
             processed_data[i, :, :, :] = img[
                 x_index : x_index + crop_size, y_index : y_index + crop_size, :
             ]

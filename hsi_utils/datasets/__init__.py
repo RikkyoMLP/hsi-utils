@@ -10,3 +10,4 @@ from .dataset_utils import (
     HSIDataset,
 )
 from .io import loadmat, whosmat, loadexr, whosexr
+from .batch_loader import BatchLoader
