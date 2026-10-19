@@ -197,8 +197,15 @@ Regularization losses for HSI reconstruction.
 Utilities for generating and managing optical masks, specifically for CASSI systems.
 
 - `generate_masks(mask_path: str, batch_size: int) -> torch.Tensor`
-  Generates a batch of 3D fixed masks. Optional `channels`, `device`, and
-  `dtype` arguments preserve the caller's execution contract.
+  Loads the 2D `mask` key from `mask.mat` and repeats it across spectral bands.
+  Optional `channels`, `device`, and `dtype` arguments preserve the caller's
+  execution contract.
+- `generate_masks_3d(mask_path: str, batch_size: int) -> torch.Tensor`
+  Loads the HWC `mask_3d` key from `mask_3d.mat`, preserving each spectral band.
+  Returns BCHW and only repeats the batch axis. Accepts the same optional
+  arguments as `generate_masks`; the last input axis must match `channels`.
+  Both loaders accept a MAT file path or its containing directory and default
+  to float32. Dispersion is handled separately by the physics operator.
 - `generate_shift_masks(mask_path: str, batch_size: int) -> tuple[torch.Tensor, torch.Tensor]`
   Synthesizes shifted 3D masks from `mask.mat` and returns their squared sum.
 - `load_shifted_masks(mask_path: str, batch_size: int) -> tuple[torch.Tensor, torch.Tensor]`

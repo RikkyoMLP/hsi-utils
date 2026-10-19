@@ -34,10 +34,10 @@ def generate_masks(
     dtype: torch.dtype = torch.float32,
 ) -> torch.Tensor:
     """
-    Generate 3D masks for CASSI system.
+    Repeat a base 2D mask across spectral channels for a CASSI system.
 
     Args:
-        mask_path: Path to the directory containing mask files.
+        mask_path: Path to mask.mat or its containing directory.
         batch_size: Number of masks to generate (batch size).
         channels: Number of spectral channels.
         device: Output device. Defaults to CUDA when available, otherwise CPU.
@@ -60,6 +60,42 @@ def generate_masks(
         raise ValueError(f"base mask must be 2D, got shape {mask.shape}")
     mask3d = np.repeat(mask[None], channels, axis=0)
     tensor = torch.from_numpy(np.ascontiguousarray(mask3d)).to(
+        device=_target_device(device),
+        dtype=dtype,
+    )
+    return tensor.unsqueeze(0).expand(batch_size, -1, -1, -1).contiguous()
+
+
+def generate_masks_3d(
+    mask_path: str | Path,
+    batch_size: int,
+    *,
+    channels: int = 28,
+    device: torch.device | str | None = None,
+    dtype: torch.dtype = torch.float32,
+) -> torch.Tensor:
+    """Load an HWC spectral mask, preserving each band's own spatial coding.
+
+    ``mask_path`` is a MAT file or a directory containing ``mask_3d.mat``.
+    The MAT key must be ``mask_3d`` with shape ``[H, W, channels]``.
+    Returns a ``[batch_size, channels, H, W]`` tensor; only the batch axis
+    is repeated. Device and dtype follow :func:`generate_masks`.
+    """
+    if batch_size <= 0 or channels <= 0:
+        raise ValueError("batch_size and channels must be positive")
+    file_path = _mask_file(mask_path, "mask_3d.mat")
+    _log_mask_path_to_console(file_path)
+    if not file_path.is_file():
+        raise FileNotFoundError(f"Mask file not found at {file_path}")
+    document = loadmat(file_path, variable_names=["mask_3d"])
+    if "mask_3d" not in document:
+        raise KeyError(f"MAT key 'mask_3d' missing from {file_path}")
+    mask = np.asarray(document["mask_3d"])
+    if mask.ndim != 3 or mask.shape[-1] != channels:
+        raise ValueError(
+            f"spectral mask must have shape [H, W, {channels}], got {mask.shape}"
+        )
+    tensor = torch.from_numpy(np.ascontiguousarray(mask.transpose(2, 0, 1))).to(
         device=_target_device(device),
         dtype=dtype,
     )
